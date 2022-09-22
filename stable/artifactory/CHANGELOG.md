@@ -1,7 +1,129 @@
 # JFrog Artifactory Chart Changelog
 All changes to this chart will be documented in this file.
 
-## [107.25.6] - Aug 23, 2021
+## [107.41.13] - June 27, 2022
+* Added support for nginx.terminationGracePeriodSeconds [GH-1645](https://github.com/jfrog/charts/issues/1645)
+* Use an alternate command for `find` to copy custom certificates
+* Added support for circle of trust using `circleOfTrustCertificatesSecret` secret name [GH-1623](https://github.com/jfrog/charts/pull/1623)
+
+## [107.40.0] - June 16, 2022
+* Added support for PodDisruptionBudget [GH-1618](https://github.com/jfrog/charts/issues/1618)
+* From artifactory 7.38.x, joinKey can be retrived from Admin > User Management > Settings in UI
+* Allow templating for pod annotations [GH-1634](https://github.com/jfrog/charts/pull/1634)
+* Fixed `customPersistentPodVolumeClaim` name to `customPersistentVolumeClaim`
+* Added flag to control enable/disbable infra services in splitServicesToContainers
+
+## [107.39.0] - May 31, 2022
+* Fix default `artifactory.async.corePoolSize` [GH-1612](https://github.com/jfrog/charts/issues/1612)
+* Added support of nginx annotations
+* Reduce startupProbe `initialDelaySeconds`
+* Align all liveness and readiness probes failureThreshold to `5` seconds
+* Added new flag `unifiedSecretInstallation` to enables single unified secret holding all the artifactory secrets
+* Updated router version to `7.38.0`
+* Add support for NFS config with directories `haBackupDir` and `haDataDir`
+* Fixed - disable jfconnect on oss/jcr/cpp flavours [GH-1630](https://github.com/jfrog/charts/issues/1630)
+
+## [107.38.0] - May 04, 2022
+* Added support for `global.nodeSelector` to artifactory and nginx pods
+* Updated router version to `7.36.1`
+* Added support for custom global probes timeout
+* Updated frontend container command
+* Added topologySpreadConstraints to artifactory and nginx, and add lifecycle hooks to nginx [GH-1596](https://github.com/jfrog/charts/pull/1596)
+* Added support of extraEnvironmentVariables for all infra services containers
+* Enabled the consumption (jfconnect) flag by default
+* Fix jfconnect disabling on non-splitcontainers
+
+## [107.37.0] - Mar 08, 2022
+* Added support for customPorts in nginx deployment
+* Bugfix - Wrong proxy_pass configurations for /artifactory/ in the default artifactory.conf
+* Added signedUrlExpirySeconds option to artifactory.persistence.type aws-S3-V3
+* Updated router version to `7.35.0`
+* Added useInstanceCredentials,enableSignedUrlRedirect option to google-storage-v2
+* Changed dependency charts repo to `charts.jfrog.io`
+
+## [107.36.0] - Mar 03, 2022
+* Remove pdn tracker which starts replicator service
+* Added silent option for curl probes
+* Added readiness health check for the artifactory container for k8s version < 1.20
+* Fix property file migration issue to system.yaml 6.x to 7.x
+
+## [107.35.0] - Feb 08, 2022
+* Updated router version to `7.32.1`
+
+## [107.33.0] - Jan 11, 2022
+* Add more user friendly support for anti-affinity
+* Pod anti-affinity is now enabled by default (soft rule)
+* Readme fixes
+* Added support for setting `fsGroupChangePolicy`
+* Added nginx customInitContainers, customVolumes, customSidecarContainers [GH-1565](https://github.com/jfrog/charts/pull/1565)
+* Updated router version to `7.30.0`
+
+## [107.32.0] - Dec 22, 2021
+* Updated logger image to `jfrog/ubi-minimal:8.5-204`
+* Added default `8091` as `artifactory.tomcat.maintenanceConnector.port` for probes check
+* Refactored probes to replace httpGet probes with basic exec + curl
+* Refactored `database-creds` secret to create only when database values are passed
+* Added new endpoints for probes `/artifactory/api/v1/system/liveness` and `/artifactory/api/v1/system/readiness`
+* Enabled `newProbes:true` by default to use these endpoints
+* Fix filebeat sidecar spool file permissions
+* Updated filebeat sidecar container to `7.16.2`
+
+## [107.31.0] - Dec 17, 2021
+* Added support for HorizontalPodAutoscaler apiVersion `autoscaling/v2beta2`
+* Remove integration service feature flag to make it mandatory service
+* Update postgresql tag version to `13.4.0-debian-10-r39`
+* Fixed `artifactory.resources` indentation in `migration-artifactory` init container [GH-1562](https://github.com/jfrog/charts/issues/1562)
+* Refactored `router.requiredServiceTypes` to support platform chart
+
+## [107.30.0] - Nov 30, 2021
+* Fixed incorrect permission for filebeat.yaml
+* Updated healthcheck (liveness/readiness) api for integration service
+* Disable readiness health check for the artifactory container when running in the container split mode
+* Ability to start replicator on enabling pdn tracker
+
+## [107.29.0] - Nov 26, 2021
+* Added integration service container in artifactory
+* Add support for Ingress Class Name in Ingress Spec [GH-1516](https://github.com/jfrog/charts/pull/1516)
+* Fixed chart values to use curl instead of wget [GH-1529](https://github.com/jfrog/charts/issues/1529)
+* Updated nginx config to allow websockets when pipelines is enabled
+* Moved router.topology.local.requireqservicetypes from system.yaml to router as environment variable
+* Added jfconnect in system.yaml
+* Updated artifactory container’s health probes to use artifactory api on rt-split
+* Updated initContainerImage to `jfrog/ubi-minimal:8.5-204`
+* Updated router version to `7.28.2`
+* Set Jfconnect enabled to `false` in the artifactory container when running in the container split mode
+
+## [107.28.0] - Nov 11, 2021
+* Added default values cpu and memeory in initContainers
+* Updated router version to `7.26.0`
+* Updated (`rbac.create` and `serviceAccount.create` to false by default) for least privileges
+* Fixed incorrect data type for `Values.router.serviceRegistry.insecure` in default values.yaml [GH-1514](https://github.com/jfrog/charts/pull/1514/files)
+* **IMPORTANT**
+* Changed init-container images from `alpine` to `ubi8/ubi-minimal`
+* Added support for AWS License Manager using `.Values.aws.licenseConfigSecretName`
+
+## [107.27.0] - Oct 6, 2021
+* **Breaking change**
+* Aligned probe structure (moved probes variables under config block)
+* Added support for new probes(set to false by default)
+* Bugfix - Invalid format for `multiPartLimit,multipartElementSize,maxCacheSize` in binarystore.xml [GH-1466](https://github.com/jfrog/charts/issues/1466)
+* Added missioncontrol container in artifactory
+* Dropped NET_RAW capability for the containers
+* Added resources to migration-artifactory init container
+* Added resources to all rt split containers
+* Updated router version to `7.25.1`
+* Added support for Ingress networking.k8s.io/v1/Ingress for k8s >=1.22 [GH-1487](https://github.com/jfrog/charts/pull/1487)
+* Added min kubeVersion ">= 1.14.0-0" in chart.yaml
+* Update alpine tag version to `3.14.2`
+* Update busybox tag version to `1.33.1`
+* Artifactory chart support for cluster license
+
+## [107.26.0] - Aug 23, 2021
+* Added Observability container (only when `splitServicesToContainers` is enabled)
+* Support for high availability (when replicaCount > 1)
+* Added min kubeVersion ">= 1.12.0-0" in chart.yaml
+
+## [107.25.0] - Aug 13, 2021
 * Updated readme of chart to point to wiki. Refer [Installing Artifactory](https://www.jfrog.com/confluence/display/JFROG/Installing+Artifactory)
 * Added startupProbe and livenessProbe for RT-split containers
 * Updated router version to 7.24.1
@@ -10,7 +132,6 @@ All changes to this chart will be documented in this file.
 * Changed network policy to allow all ingress and egress traffic
 * Added Observability changes
 * Added support for global.versions.router (only when `splitServicesToContainers` is enabled)
-* Added min kubeVersion ">= 1.12.0-0"
 
 ## [107.24.0] - July 27, 2021
 * Support global and product specific tags at the same time

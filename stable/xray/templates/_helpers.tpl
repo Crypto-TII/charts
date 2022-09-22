@@ -155,12 +155,12 @@ Create rabbitmq URL
 
 
 {{/*
-Create rabbitmq username 
+Create rabbitmq username
 */}}
 {{- define "rabbitmq.user" -}}
 {{- if index .Values "rabbitmq" "enabled" -}}
 {{- .Values.rabbitmq.auth.username -}}
-{{- end -}} 
+{{- end -}}
 {{- end -}}
 
 
@@ -171,7 +171,7 @@ Create rabbitmq password secret name
 {{- if index .Values "rabbitmq" "enabled" -}}
 {{- $name := default (printf "%s" "rabbitmq") .Values.rabbitmq.nameOverride -}}
 {{- .Values.rabbitmq.auth.existingPasswordSecret | default (printf "%s-%s" .Release.Name $name) -}}
-{{- end -}} 
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -357,6 +357,101 @@ Custom certificate copy command
 {{- define "xray.copyCustomCerts" -}}
 echo "Copy custom certificates to {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted";
 mkdir -p {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted;
-find /tmp/certs -type f -not -name "*.key" -exec cp -v {} {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted \;;
-find {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted/ -type f -name "tls.crt" -exec mv -v {} {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted/ca.crt \;;
+for file in $(ls -1 /tmp/certs/* | grep -v .key | grep -v ":" | grep -v grep); do if [ -f "${file}" ]; then cp -v ${file} {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted; fi done;
+if [ -f {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted/tls.crt ]; then mv -v {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted/tls.crt {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted/ca.crt; fi;
+{{- end -}}
+
+{{/*
+xray liveness probe
+*/}}
+{{- define "xray.livenessProbe" -}}
+{{- if .Values.newProbes -}}
+{{- printf "%s" "/api/v1/system/liveness" -}}
+{{- else -}}
+{{- printf "%s" "/api/v1/system/ping" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+xray readiness probe
+*/}}
+{{- define "xray.readinessProbe" -}}
+{{- if .Values.newProbes -}}
+{{- printf "%s" "/api/v1/system/readiness" -}}
+{{- else -}}
+{{- printf "%s" "/api/v1/system/ping" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+router liveness probe
+*/}}
+{{- define "xray.router.livenessProbe" -}}
+{{- if .Values.newProbes -}}
+{{- printf "%s" "/router/api/v1/system/liveness" -}}
+{{- else -}}
+{{- printf "%s" "/router/api/v1/system/health" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+router readiness probe
+*/}}
+{{- define "xray.router.readinessProbe" -}}
+{{- if .Values.newProbes -}}
+{{- printf "%s" "/router/api/v1/system/readiness" -}}
+{{- else -}}
+{{- printf "%s" "/router/api/v1/system/health" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve xray requiredServiceTypes value
+*/}}
+{{- define "xray.router.requiredServiceTypes" -}}
+{{- $requiredTypes := "jfxr,jfxana,jfxidx,jfxpst,jfob" -}}
+{{- $requiredTypes -}}
+{{- end -}}
+
+{{/*
+Resolve Xray pod node selector value
+*/}}
+{{- define "xray.nodeSelector" -}}
+nodeSelector:
+{{- if .Values.global.nodeSelector }}
+{{ toYaml .Values.global.nodeSelector | indent 2 }}
+{{- else if .Values.xray.nodeSelector }}
+{{ toYaml .Values.xray.nodeSelector | indent 2 }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve unifiedCustomSecretVolumeName value
+*/}}
+{{- define "xray.unifiedCustomSecretVolumeName" -}}
+{{- printf "%s-%s" (include "xray.name" .) ("unified-secret-volume") -}}
+{{- end -}}
+
+{{/*
+Check the Duplication of volume names for secrets. If unifiedSecretInstallation is enabled then the method is checking for volume names,
+if the volume exists in customVolume then an extra volume with the same name will not be getting added in unifiedSecretInstallation case.
+*/}}
+{{- define "xray.checkDuplicateUnifiedCustomVolume" -}}
+{{- if or .Values.global.customVolumes .Values.common.customVolumes -}}
+{{- $val := (tpl (include "xray.customVolumes" .) .) | toJson -}}
+{{- contains (include "xray.unifiedCustomSecretVolumeName" .) $val | toString -}}
+{{- else -}}
+{{- printf "%s" "false" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve executionServiceAesKey value
+*/}}
+{{- define "xray.executionServiceAesKey" -}}
+{{- if .Values.global.executionServiceAesKey -}}
+{{- .Values.global.executionServiceAesKey -}}
+{{- else if .Values.xray.executionServiceAesKey -}}
+{{- .Values.xray.executionServiceAesKey -}}
+{{- end -}}
 {{- end -}}

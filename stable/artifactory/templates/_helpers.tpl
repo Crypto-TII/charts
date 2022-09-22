@@ -295,17 +295,190 @@ find {{ .Values.artifactory.persistence.mountPath }}/etc/security/keys/trusted/ 
 {{- end -}}
 
 {{/*
+Circle of trust certificates copy command
+*/}}
+{{- define "artifactory.copyCircleOfTrustCertsCerts" -}}
+echo "Copy circle of trust certificates to {{ .Values.artifactory.persistence.mountPath }}/etc/access/keys/trusted";
+mkdir -p {{ .Values.artifactory.persistence.mountPath }}/etc/access/keys/trusted;
+for file in $(ls -1 /tmp/circleoftrustcerts/* | grep -v .key | grep -v ":" | grep -v grep); do if [ -f "${file}" ]; then cp -v ${file} {{ .Values.artifactory.persistence.mountPath }}/etc/access/keys/trusted; fi done;
+{{- end -}}
+
+{{/*
 Resolve requiredServiceTypes value
 */}}
-{{- define "router.requiredServiceTypes" -}}
-{{- $requiredTypes := "jfrt,jfac,jfmd,jffe,jfevt,jfob" -}}
-{{- if .Values.jfconnect -}}
-  {{- if .Values.jfconnect.enabled -}}
+{{- define "artifactory.router.requiredServiceTypes" -}}
+{{- $requiredTypes := "jfrt,jfac" -}}
+{{- if .Values.observability.enabled -}}
+  {{- $requiredTypes = printf "%s,%s" $requiredTypes "jfob" -}}
+{{- end -}}
+{{- if .Values.metadata.enabled -}}
+  {{- $requiredTypes = printf "%s,%s" $requiredTypes "jfmd" -}}
+{{- end -}}
+{{- if .Values.event.enabled -}}
+  {{- $requiredTypes = printf "%s,%s" $requiredTypes "jfevt" -}}
+{{- end -}}
+{{- if .Values.integration.enabled -}}
+  {{- $requiredTypes = printf "%s,%s" $requiredTypes "jfint" -}}
+{{- end -}}
+{{- if .Values.frontend.enabled -}}
+  {{- $requiredTypes = printf "%s,%s" $requiredTypes "jffe" -}}
+{{- end -}}
+{{- if .Values.jfconnect.enabled -}}
   {{- $requiredTypes = printf "%s,%s" $requiredTypes "jfcon" -}}
-  {{- end -}}
 {{- end -}}
 {{- if .Values.artifactory.replicator.enabled -}}
-{{- $requiredTypes = printf "%s,%s" $requiredTypes "jfxfer" -}}
+    {{- $requiredTypes = printf "%s,%s" $requiredTypes "jfxfer" -}}
+{{- end -}}
+{{- if .Values.mc.enabled -}}
+  {{- $requiredTypes = printf "%s,%s" $requiredTypes "jfmc" -}}
 {{- end -}}
 {{- $requiredTypes -}}
+{{- end -}}
+
+{{/*
+Check if the image is artifactory pro or not
+*/}}
+{{- define "artifactory.isImageProType" -}}
+{{- if not (regexMatch "^.*(oss|cpp-ce|jcr).*$" .Values.artifactory.image.repository) -}}
+{{ true }}
+{{- else -}}
+{{ false }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Check if the artifactory is using derby database
+*/}}
+{{- define "artifactory.isUsingDerby" -}}
+{{- if and (eq (default "derby" .Values.database.type) "derby") (not .Values.postgresql.enabled) -}}
+{{ true }}
+{{- else -}}
+{{ false }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+nginx scheme (http/https)
+*/}}
+{{- define "nginx.scheme" -}}
+{{- if .Values.nginx.http.enabled -}}
+{{- printf "%s" "http" -}}
+{{- else -}}
+{{- printf "%s" "https" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+nginx port (80/443) based on http/https enabled
+*/}}
+{{- define "nginx.port" -}}
+{{- if .Values.nginx.http.enabled -}}
+{{- .Values.nginx.http.internalPort -}}
+{{- else -}}
+{{- .Values.nginx.https.internalPort -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+artifactory liveness probe
+*/}}
+{{- define "artifactory.livenessProbe" -}}
+{{- if or .Values.newProbes .Values.splitServicesToContainers -}}
+{{- printf "%s" "/artifactory/api/v1/system/liveness" -}}
+{{- else -}}
+{{- printf "%s" "/router/api/v1/system/health" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+artifactory readiness probe
+*/}}
+{{- define "artifactory.readinessProbe" -}}
+{{- if or .Values.newProbes .Values.splitServicesToContainers -}}
+{{- printf "%s" "/artifactory/api/v1/system/readiness" -}}
+{{- else -}}
+{{- printf "%s" "/router/api/v1/system/health" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+artifactory port
+*/}}
+{{- define "artifactory.port" -}}
+{{- if or .Values.newProbes .Values.splitServicesToContainers -}}
+{{- .Values.artifactory.tomcat.maintenanceConnector.port -}}
+{{- else -}}
+{{- .Values.router.internalPort -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve customInitContainers value
+*/}}
+{{- define "artifactory.nginx.customInitContainers" -}}
+{{- if .Values.nginx.customInitContainers -}}
+{{- .Values.nginx.customInitContainers -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve customVolumes value
+*/}}
+{{- define "artifactory.nginx.customVolumes" -}}
+{{- if .Values.nginx.customVolumes -}}
+{{- .Values.nginx.customVolumes -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve customSidecarContainers value
+*/}}
+{{- define "artifactory.nginx.customSidecarContainers" -}}
+{{- if .Values.nginx.customSidecarContainers -}}
+{{- .Values.nginx.customSidecarContainers -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve Artifactory pod node selector value
+*/}}
+{{- define "artifactory.nodeSelector" -}}
+nodeSelector:
+{{- if .Values.global.nodeSelector }}
+{{ toYaml .Values.global.nodeSelector | indent 2 }}
+{{- else if .Values.artifactory.nodeSelector }}
+{{ toYaml .Values.artifactory.nodeSelector | indent 2 }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve Nginx pods node selector value
+*/}}
+{{- define "nginx.nodeSelector" -}}
+nodeSelector:
+{{- if .Values.global.nodeSelector }}
+{{ toYaml .Values.global.nodeSelector | indent 2 }}
+{{- else if .Values.nginx.nodeSelector }}
+{{ toYaml .Values.nginx.nodeSelector | indent 2 }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve unifiedCustomSecretVolumeName value
+*/}}
+{{- define "artifactory.unifiedCustomSecretVolumeName" -}}
+{{- printf "%s-%s" (include "artifactory.name" .) ("unified-secret-volume") -}}
+{{- end -}}
+
+{{/*
+Check the Duplication of volume names for secrets. If unifiedSecretInstallation is enabled then the method is checking for volume names,
+if the volume exists in customVolume then an extra volume with the same name will not be getting added in unifiedSecretInstallation case.
+*/}}
+{{- define "artifactory.checkDuplicateUnifiedCustomVolume" -}}
+{{- if or .Values.global.customVolumes .Values.artifactory.customVolumes -}}
+{{- $val := (tpl (include "artifactory.customVolumes" .) .) | toJson -}}
+{{- contains (include "artifactory.unifiedCustomSecretVolumeName" .) $val | toString -}}
+{{- else -}}
+{{- printf "%s" "false" -}}
+{{- end -}}
 {{- end -}}

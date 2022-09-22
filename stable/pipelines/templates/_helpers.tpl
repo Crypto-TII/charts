@@ -49,6 +49,14 @@ The www name
 {{- end -}}
 
 {{/*
+The frontend name
+*/}}
+{{- define "pipelines.frontend.name" -}}
+{{- $name := .Release.Name | trunc 29 -}}
+{{- printf "%s-%s-frontend" $name .Chart.Name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
 The msg name
 */}}
 {{- define "pipelines.msg.name" -}}
@@ -205,36 +213,33 @@ imagePullSecrets:
 {{/*
 Resolve customInitContainersBegin value
 */}}
-{{- define "pipelines.vault.customInitContainersBegin" -}}
+{{- define "pipelines.customInitContainersBegin" -}}
 {{- if .Values.global.customInitContainersBegin -}}
 {{- .Values.global.customInitContainersBegin -}}
-{{- end -}}
-{{- if .Values.vault.customInitContainersBegin -}}
-{{- .Values.vault.customInitContainersBegin -}}
+{{- else if .Values.pipelines.customInitContainersBegin -}}
+{{- .Values.pipelines.customInitContainersBegin -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
 Resolve customInitContainers value
 */}}
-{{- define "pipelines.vault.customInitContainers" -}}
+{{- define "pipelines.customInitContainers" -}}
 {{- if .Values.global.customInitContainers -}}
 {{- .Values.global.customInitContainers -}}
-{{- end -}}
-{{- if .Values.vault.customInitContainers -}}
-{{- .Values.vault.customInitContainers -}}
+{{- else if .Values.pipelines.customInitContainers -}}
+{{- .Values.pipelines.customInitContainers -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
 Resolve customVolumes value
 */}}
-{{- define "pipelines.vault.customVolumes" -}}
+{{- define "pipelines.customVolumes" -}}
 {{- if .Values.global.customVolumes -}}
 {{- .Values.global.customVolumes -}}
-{{- end -}}
-{{- if .Values.vault.customVolumes -}}
-{{- .Values.vault.customVolumes -}}
+{{- else if .Values.pipelines.customVolumes -}}
+{{- .Values.pipelines.customVolumes -}}
 {{- end -}}
 {{- end -}}
 
@@ -322,7 +327,89 @@ Custom certificate copy command
 {{- define "pipelines.copyCustomCerts" -}}
 echo "Copy custom certificates to {{ .Values.pipelines.mountPath }}/security/keys/trusted";
 mkdir -p {{ .Values.pipelines.mountPath }}/security/keys/trusted;
-find /tmp/certs -type f -not -name "*.key" -exec cp -v {} {{ .Values.pipelines.mountPath }}/security/keys/trusted \;;
-find {{ .Values.pipelines.mountPath }}/security/keys/trusted/ -type f -name "tls.crt" -exec mv -v {} {{ .Values.pipelines.mountPath }}/security/keys/trusted/ca.crt \;;
+if [ -f /tmp/certs/tls.crt ]; then cp -v /tmp/certs/tls.crt {{ .Values.pipelines.mountPath }}/security/keys/trusted/pipelines_custom_certs.crt; fi;
 chown -R 1066:1066 {{ .Values.pipelines.mountPath }}
+{{- end -}}
+
+{{/*
+pipelines liveness probe
+*/}}
+{{- define "pipelines.livenessProbe" -}}
+{{- if .Values.newProbes -}}
+{{- printf "%s" "/v1/system/liveness" -}}
+{{- else -}}
+{{- printf "%s" "/" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+pipelines readiness probe
+*/}}
+{{- define "pipelines.readinessProbe" -}}
+{{- if .Values.newProbes -}}
+{{- printf "%s" "/v1/system/readiness" -}}
+{{- else -}}
+{{- printf "%s" "/" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+router liveness probe
+*/}}
+{{- define "pipelines.router.livenessProbe" -}}
+{{- if .Values.newProbes -}}
+{{- printf "%s" "/router/api/v1/system/liveness" -}}
+{{- else -}}
+{{- printf "%s" "/router/api/v1/system/health" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+router readiness probe
+*/}}
+{{- define "pipelines.router.readinessProbe" -}}
+{{- if .Values.newProbes -}}
+{{- printf "%s" "/router/api/v1/system/readiness" -}}
+{{- else -}}
+{{- printf "%s" "/router/api/v1/system/health" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve pipelines requiredServiceTypes value
+*/}}
+{{- define "pipelines.router.requiredServiceTypes" -}}
+{{- $requiredTypes := "jfpip" -}}
+{{- $requiredTypes -}}
+{{- end -}}
+
+{{/*
+Resolve Pipelines pod node selector value
+*/}}
+{{- define "pipelines.nodeSelector" -}}
+nodeSelector:
+{{- if .Values.global.nodeSelector }}
+{{ toYaml .Values.global.nodeSelector | indent 2 }}
+{{- else if .Values.pipelines.nodeSelector }}
+{{ toYaml .Values.pipelines.nodeSelector | indent 2 }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve unifiedCustomSecretVolumeName value
+*/}}
+{{- define "pipelines.unifiedCustomSecretVolumeName" -}}
+{{- printf "%s-%s" (include "pipelines.name" .) ("unified-secret-volume") -}}
+{{- end -}}
+
+{{/*
+Check the Duplication of volume names for secrets. If unifiedSecretInstallation is enabled then the method is checking for volume names,
+if the volume exists in customVolume then an extra volume with the same name will not be getting added in unifiedSecretInstallation case.*/}}
+{{- define "pipelines.checkDuplicateUnifiedCustomVolume" -}}
+{{- if or .Values.global.customVolumes .Values.pipelines.customVolumes -}}
+{{- $val := (tpl (include "pipelines.customVolumes" .) .) | toJson -}}
+{{- contains (include "pipelines.unifiedCustomSecretVolumeName" .) $val | toString -}}
+{{- else -}}
+{{- printf "%s" "false" -}}
+{{- end -}}
 {{- end -}}
