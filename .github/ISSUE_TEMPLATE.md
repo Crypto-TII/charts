@@ -28,6 +28,9 @@ explain why.
 **Which chart**:
 
 
+**Which product license** (Enterprise/Pro/oss):
+
+
 **What happened**:
 
 
