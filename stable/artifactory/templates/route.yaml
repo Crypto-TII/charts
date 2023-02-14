@@ -31,9 +31,9 @@ spec:
   tls:
     termination: {{ .Values.route.tls.termination }}
     insecureEdgeTerminationPolicy: {{ .Values.route.tls.insecureEdgeTerminationPolicy }}
-    certificate: |-
-{{ .Values.route.tls.certificate | indent 6 }}
-    key: |-
-{{ .Values.route.tls.key | indent 6 }}
+{{- if .Values.route.tls.secret }}
+    certificate: {{ index (lookup "v1" "Secret" .Release.Namespace .Values.route.tls.secret).data .Values.route.tls.certificate | b64dec | quote }}
+    key: {{ index (lookup "v1" "Secret" .Release.Namespace .Values.route.tls.secret).data .Values.route.tls.key | b64dec | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
