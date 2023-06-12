@@ -1,11 +1,32 @@
 # JFrog Distribution Chart Changelog
 All changes to this project chart be documented in this file.
 
-## [102.14.3] - Jul 18, 2022
+## [102.17.0] - Jan 30, 2023
+* Updated jfrogUrl text path to copy
+* Updated initContainerImage and logger image to `ubi9/ubi-minimal:9.1.0.1760`
+
+## [102.16.0] - Jan 16, 2023
+* Removed `newProbes.enabled`, default to new probes
+* Added support for annotations for distribution statefulset [GH-1665](https://github.com/jfrog/charts/pull/1665)
+* Added topologySpreadConstraints to distribution pods
+* Updated redis version tag to `7.0.6-debian-11-r0`
+* Updated postgresql tag version to `13.9.0-debian-11-r11`
+* Updated initContainerImage and logger image to `ubi8/ubi-minimal:8.7.1049`
+
+## [102.15.0] - Aug 25, 2022
+* Updated router version to `7.45.0`
+* Added flag `distribution.schedulerName` to set for the pods the value of schedulerName field [GH-1606](https://github.com/jfrog/charts/issues/1606)
+* Updated Observability version to `1.9.3`
+* Added support for lifecycle hooks for all containers
+* Updated logger Image to `ubi8/ubi-minimal:8.6-902`
+
+## [102.14.0] - Aug 25, 2022
 * Updated Observability version to `1.9.2`
 * Use an alternate command for `find` to copy custom certificates
 * Updated router version to `7.42.0`
 * Increased distribution redis container probes timeout [GH-1655](https://github.com/jfrog/charts/issues/1655)
+* Updated initContainerImage to `ubi8/ubi-minimal:8.6-854`
+* Added support to truncate (> 63 chars) for unifiedCustomSecretVolumeName
 
 ## [102.13.0] - Apr 29, 2022
 * Fixed loggers sidecars to tail a configured log

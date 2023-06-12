@@ -53,6 +53,23 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 
 {{/*
+Expand the name of rabbit chart.
+*/}}
+{{- define "rabbitmq.name" -}}
+{{- default (printf "%s" "rabbitmq") .Values.rabbitmq.nameOverride -}}
+{{- end -}}
+
+
+{{- define "xray.rabbitmq.migration.fullname" -}}
+{{- $name := default "rabbitmq-migration" -}}
+{{- if contains $name .Release.Name -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
@@ -135,6 +152,16 @@ Create the name of the service account to use
 {{- end -}}
 {{- end -}}
 
+Create the name of the service account to use for rabbitmq migration
+*/}}
+{{- define "xray.rabbitmq.migration.serviceAccountName" -}}
+{{- if .Values.rabbitmq.migration.serviceAccount.create -}}
+{{ default (include "xray.rabbitmq.migration.fullname" .) .Values.rabbitmq.migration.serviceAccount.name }}
+{{- else -}}
+{{ default "rabbitmq-migration" .Values.rabbitmq.migration.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+
 {{/*
 Create chart name and version as used by the chart label.
 */}}
@@ -147,12 +174,11 @@ Create rabbitmq URL
 */}}
 {{- define "rabbitmq.url" -}}
 {{- if index .Values "rabbitmq" "enabled" -}}
-{{- $rabbitmqPort := .Values.rabbitmq.service.port -}}
+{{- $rabbitmqPort := .Values.rabbitmq.service.ports.amqp -}}
 {{- $name := default (printf "%s" "rabbitmq") .Values.rabbitmq.nameOverride -}}
 {{- printf "%s://%s-%s:%g/" "amqp" .Release.Name $name $rabbitmqPort -}}
 {{- end -}}
 {{- end -}}
-
 
 {{/*
 Create rabbitmq username
@@ -245,6 +271,19 @@ Resolve masterKeySecretName value
 {{- end -}}
 
 {{/*
+Resolve executionServiceAesKeySecretName value
+*/}}
+{{- define "xray.executionServiceAesKeySecretName" -}}
+{{- if .Values.global.executionServiceAesKeySecretName -}}
+{{- .Values.global.executionServiceAesKeySecretName -}}
+{{- else if .Values.xray.executionServiceAesKeySecretName -}}
+{{- .Values.xray.executionServiceAesKeySecretName -}}
+{{- else -}}
+{{ include "xray.fullname" . }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Resolve imagePullSecrets value
 */}}
 {{- define "xray.imagePullSecrets" -}}
@@ -257,6 +296,21 @@ imagePullSecrets:
 imagePullSecrets:
 {{- range .Values.imagePullSecrets }}
   - name: {{ . }}
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve imagePullSecretsStrList value
+*/}}
+{{- define "xray.imagePullSecretsStrList" -}}
+{{- if .Values.global.imagePullSecrets }}
+{{- range .Values.global.imagePullSecrets }}
+- {{ . }}
+{{- end }}
+{{- else if .Values.imagePullSecrets }}
+{{- range .Values.imagePullSecrets }}
+- {{ . }}
 {{- end }}
 {{- end -}}
 {{- end -}}
@@ -352,6 +406,19 @@ Return the proper xray chart image names
 {{- end -}}
 
 {{/*
+Return the registry of a service
+*/}}
+{{- define "xray.getRegistryByService" -}}
+{{- $dot := index . 0 }}
+{{- $service := index . 1 }}
+{{- if $dot.Values.global.imageRegistry }}
+    {{- $dot.Values.global.imageRegistry }}
+{{- else -}}
+    {{- index $dot.Values $service "image" "registry" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Custom certificate copy command
 */}}
 {{- define "xray.copyCustomCerts" -}}
@@ -359,50 +426,6 @@ echo "Copy custom certificates to {{ .Values.xray.persistence.mountPath }}/etc/s
 mkdir -p {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted;
 for file in $(ls -1 /tmp/certs/* | grep -v .key | grep -v ":" | grep -v grep); do if [ -f "${file}" ]; then cp -v ${file} {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted; fi done;
 if [ -f {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted/tls.crt ]; then mv -v {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted/tls.crt {{ .Values.xray.persistence.mountPath }}/etc/security/keys/trusted/ca.crt; fi;
-{{- end -}}
-
-{{/*
-xray liveness probe
-*/}}
-{{- define "xray.livenessProbe" -}}
-{{- if .Values.newProbes -}}
-{{- printf "%s" "/api/v1/system/liveness" -}}
-{{- else -}}
-{{- printf "%s" "/api/v1/system/ping" -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-xray readiness probe
-*/}}
-{{- define "xray.readinessProbe" -}}
-{{- if .Values.newProbes -}}
-{{- printf "%s" "/api/v1/system/readiness" -}}
-{{- else -}}
-{{- printf "%s" "/api/v1/system/ping" -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-router liveness probe
-*/}}
-{{- define "xray.router.livenessProbe" -}}
-{{- if .Values.newProbes -}}
-{{- printf "%s" "/router/api/v1/system/liveness" -}}
-{{- else -}}
-{{- printf "%s" "/router/api/v1/system/health" -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-router readiness probe
-*/}}
-{{- define "xray.router.readinessProbe" -}}
-{{- if .Values.newProbes -}}
-{{- printf "%s" "/router/api/v1/system/readiness" -}}
-{{- else -}}
-{{- printf "%s" "/router/api/v1/system/health" -}}
-{{- end -}}
 {{- end -}}
 
 {{/*
@@ -429,7 +452,7 @@ nodeSelector:
 Resolve unifiedCustomSecretVolumeName value
 */}}
 {{- define "xray.unifiedCustomSecretVolumeName" -}}
-{{- printf "%s-%s" (include "xray.name" .) ("unified-secret-volume") -}}
+{{- printf "%s-%s" (include "xray.name" .) ("unified-secret-volume") | trunc 63 -}}
 {{- end -}}
 
 {{/*

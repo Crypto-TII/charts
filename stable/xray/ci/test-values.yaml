@@ -4,6 +4,7 @@ unifiedUpgradeAllowed: true
 databaseUpgradeReady: true
 xray:
   jfrogUrl: http://artifactory.rt:8082
+  unifiedSecretInstallation: true
   openMetrics:
     enabled: true
   annotations:
@@ -97,6 +98,9 @@ server:
       exec:
         command: ["/bin/sh", "-c", "echo Hello from the server postStart handler >> /tmp/message"]
 
+  statefulset:
+    annotations:
+      xray: test
 
 analysis:
   resources:

@@ -1,14 +1,65 @@
 # JFrog Pipelines Chart Changelog
 All changes to this chart to be documented in this file.
 
-## [101.26.0] - Aug 2, 2022
+## [101.38.1] - Apr 18, 2023
+* Handle jfrogUrlUI if nothing is set
+* Fix migration script failures on ssl enforced database
+
+## [101.37.3] - Feb 20, 2023
+* Added build badge feature for pipelines
+* Added configuration to use access instead of vault to store secrets
+* Retained installer metrics only for db migrations
+
+## [101.35.0] - Feb 06, 2023
+* Fixed indentation in nodepoolservice container definition
+
+## [101.34.0] - Jan 24, 2023
+* Added metrics to required init containers
+* Resources in pipelines observability is not renderring as expected
+
+## [101.33.0] - Jan 03, 2023
+* Rename nodepoolManager to nodepoolservice
+* Always run the nodepoolservice in both modes ( single pod and split mode)
+* Aligned ingress resource with cluster's networking API
+* Updated jfrogUrl text path to copy
+
+## [101.33.0] - Dec 30, 2022
+* Added readiness and liveness for the missing pods
+
+## [101.31.0] - Dec 16, 2022
+* Updated postgresql tag version to `13.9.0-debian-11-r11`
+* Improve pod startup time and reduce default resources on initcontainers
+
+## [101.29.0] - Dec 13, 2022
+* Group and split services to multiple pods to support autoscaling of only required services behind a feature flag
+* Made system config polling configurable from system.yaml
+* Handle long release names in wait for internal api logic in split mode
+* Ability to pass environment variables to specific service container
+* Add support for pod labels 
+
+## [101.28.0] - Oct 27, 2022
+* Added init containers wait-for-db and create-vault-table in vault-server pod
+* Added support for annotations for pipelines statefulset [GH-1665](https://github.com/jfrog/charts/pull/1665)
+* Added default pipelines image for ubuntu20 arm64 build nodes
+* Made baseUrlUI requirement optional in charts during install time
+
+## [101.27.0] - Sep 28, 2022
+* Added `observability` service in pipelines
+* Removed `newProbes.enabled`, default to new probes
+* Fixed bug for `unifiedSecretInstallation` support in observability
+* Fixed stringData secret keys value issue, moving data to stringData vault.sql and postgresql-connection keys
+
+## [101.26.0] - Aug 25, 2022
 * Added flag `pipelines.schedulerName` to set for the pods the value of schedulerName field [GH-1606](https://github.com/jfrog/charts/issues/1606)
 * Added config to reset log level
+* Change default go runtime images to 1.19
+* Added `NodePoolManager` microservice with default state as disabled
 
-## [101.25.0] - July 21, 2022
+## [101.25.0] - Aug 25, 2022
 * Additional fix for default path for api external url
 * Fixed custom CA init container behavior
 * Updated rabbitmq version to `3.9.21-debian-11-r0`
+* Added support to truncate (> 63 chars) for unifiedCustomSecretVolumeName
 
 ## [101.24.2] - June 22, 2022
 * Only set k8sImagePullSecret key if one is configured in values.yaml

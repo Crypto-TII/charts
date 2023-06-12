@@ -1,19 +1,68 @@
 # JFrog Xray Chart Changelog
 All changes to this chart will be documented in this file.
 
-## [103.57.6] - Aug 8, 2022
+## [103.75.12] - May 19, 2023
+* Fix lint issue when rabbitmq is disabled
+
+## [103.74.0] - May 2, 2023
+* Inject global image pull secret to the system.yaml for JAS
+* Add configuration for JAS images registry and repository in the system.yaml
+* Added securityContext for rabbitmq pre-upgrade hook pod
+
+## [103.72.0] - Apr 07, 2023
+* Adding vm memory memoryHighWatermark field and scheduler field for Rabbitmq Chart
+* Update pre-upgrade hook image of rabbitmq
+
+## [103.70.0] - Mar 21, 2023
+* Updated postgresql multi-arch tag version to `13.10.0-debian-11-r14`
+* Updated rabbitmq multi-arch tag version to `3.11.10-debian-11-r5`
+* Added pre-upgrade hook for rabbitmq upgrade from 3.8.x to 3.11.x
+
+## [103.69.0] - Mar 21, 2023
+* **IMPORTANT**
+* Added default rabbitmq user creation via `load_definition` secret to support upstream bitnami [11.x chart](https://github.com/bitnami/charts/tree/main/bitnami/rabbitmq#to-1100)
+* Updated rabbitmq's  chart version  to `11.9.3` and image version to `3.11.9-debian-11-r1`
+* Updated initContainerImage and logger image to `ubi9/ubi-minimal:9.1.0.1793`
+* Added `rabbitmq.featureFlags` to support upgrade from 3.8.x to 3.11.x . More info [here](https://blog.rabbitmq.com/posts/2022/07/required-feature-flags-in-rabbitmq-3.11/)
+
+## [103.68.0] - Feb 16, 2023
+* Updated initContainerImage and logger image to `ubi9/ubi-minimal:9.1.0.1760`
+
+## [103.67.0] - Feb 16, 2023
+* Added topologySpreadConstraints to xray pods
+* Allow setting executionServiceAesKey in a secret [GH-1685](https://github.com/jfrog/charts/issues/1685)
+* Updated postgresql tag version to `13.9.0-debian-11-r11`
+* Adding support for PodDisruptionBudget
+* Updated jfrogUrl text path to copy
+* Added pods/log and events resources to xray serviceaccount
+* Added option to pass extra environment variables via `common.extraEnvVars` for xray containers
+
+## [103.63.0] - Jan 16, 2023
+* Updated initContainerImage and logger image to `ubi8/ubi-minimal:8.7.1049`
+
+## [103.60.0] - Oct 27, 2022
+* Updated router version to `7.51.0`
+
+## [103.59.0] - Sep 20, 2022
+* Removed `newProbes.enabled`, default to new probes
+* Updated Observability version to `1.11.0`
+* Updated initContainerImage to `ubi8/ubi-minimal:8.6-941`
+* Added support for annotations for xray statefulset [GH-1665](https://github.com/jfrog/charts/pull/1665)
+
+## [103.57.0] - Aug 25, 2022
 * Added support for lifecycle hooks for all containers
 
-## [103.56.0] - Aug 2, 2022
+## [103.56.0] - Aug 25, 2022
 * Updated initContainerImage and logger Image to `ubi8/ubi-minimal:8.6-854`
 * Added `.Values.xray.openMetrics.enabled`  flag to enable metrics (defaults to `false`) [GH-1649](https://github.com/jfrog/charts/pull/1649)
 * Added flag `xray.schedulerName` to set for the pods the value of schedulerName field [GH-1606](https://github.com/jfrog/charts/issues/1606)
 * Updated Observability version to `1.9.3`
 
-## [103.55.0] - Aug 1, 2022
+## [103.55.0] - Aug 25, 2022
 * Updated initContainerImage to ubi8/ubi-minimal:8.6-854
 * Updated rabbitmq version to `3.9.21-debian-11-r0`
 * Updated router version to `7.45.0`
+* Added support to truncate (> 63 chars) for unifiedCustomSecretVolumeName
 
 ## [103.54.0] - July 14, 2022
 * Added new flag "unifiedSecretInstallation" to enables single unified secret holding all the secrets
