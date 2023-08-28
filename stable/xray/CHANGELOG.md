@@ -1,7 +1,23 @@
 # JFrog Xray Chart Changelog
 All changes to this chart will be documented in this file.
 
-## [103.75.12] - May 19, 2023
+## [103.80.9] - Jul 16, 2023
+* Added `podSecurityContext.enabled` and `containerSecurityContext.enabled` to support openshift
+
+## [103.79.0] - Jul 3, 2023
+* Added TLS support for rabbitmq
+* Moved common.extraEnvs to statefulset from values.yaml
+* Added `extraEnvVars` for each container
+* Fixed rabbitmq feature flag conditions for pre-upgrade hook command execution
+
+## [103.77.0] - Jun 05, 2023
+* Set securePassword to false in a values yaml [GH-1763](https://github.com/jfrog/charts/pull/1763)
+* Upgraded to autoscaling/v2
+
+## [103.76.0] - May 24, 2023
+* Set Pod disruption budget to none by default if not set in `xray.minAvailable`
+
+## [103.75.0] - May 19, 2023
 * Fix lint issue when rabbitmq is disabled
 
 ## [103.74.0] - May 2, 2023
